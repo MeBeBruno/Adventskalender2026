@@ -3,3 +3,5 @@
 AI Label: B-[{C}](https://mebebruno.github.io/BrunosAILabelSystem/explain.html?code)
 
 > A small web based advent calendar to get in Christmas mood 🎅
+
+&rarr; [Live Page](https://mebebruno.github.io/Adventskalender2026)
