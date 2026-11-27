@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang='de'>
+<head>
+	<meta charset='UTF-8'>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+	<title>2. Dezember</title>
+	<style>
+		:root {
+			--color-background: #fff566;
+			--color-surface: #ffaaff;
+			--color-text: #141413;
+			--color-text-muted: color-mix(in srgb, var(--color-text) 65%, transparent);
+			--color-accent: #141413;
+			--color-accent-contrast: #ffffff;
+			--color-correct: #52ee89;
+			--color-incorrect: #ff625d;
+			--color-border: color-mix(in srgb, var(--color-text) 15%, transparent);
+			--space-xs: 0.5rem;
+			--space-sm: 0.75rem;
+			--space-md: 1rem;
+			--space-lg: 1.5rem;
+			--space-xl: 2.25rem;
+			--radius-md: 0.75rem;
+			--radius-lg: 1.25rem;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		html, body {
+			min-height: 100vh;
+			width: 100%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			background-color: var(--color-background);
+			color: var(--color-text);
+			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			padding: var(--space-md);
+			line-height: 1.5;
+		}
+
+		.quiz-card {
+			background-color: var(--color-surface);
+			width: 100%;
+			max-width: 30rem;
+			padding: clamp(1.5rem, 5vw, 2.5rem);
+			border-radius: var(--radius-lg);
+		}
+
+		.quiz-card[data-transitioning='true'] {
+			opacity: 0;
+			transform: translateY(0.375rem);
+		}
+
+		.progress-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.875rem;
+			color: var(--color-text-muted);
+			margin-bottom: var(--space-xs);
+			font-weight: 500;
+		}
+
+		.progress-track {
+			width: 100%;
+			height: 0.375rem;
+			background-color: var(--color-border);
+			border-radius: 999rem;
+			overflow: hidden;
+			margin-bottom: var(--space-lg);
+		}
+
+		.progress-fill {
+			height: 100%;
+			background-color: var(--color-accent);
+			width: 0%;
+		}
+
+		.heading-title {
+			font-size: clamp(1.25rem, 3.5vw, 1.5rem);
+			font-weight: 700;
+			margin-bottom: var(--space-lg);
+			letter-spacing: -0.02em;
+		}
+
+		.options-list {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-sm);
+			list-style: none;
+		}
+
+		.option-button {
+			width: 100%;
+			text-align: left;
+			padding: var(--space-md) var(--space-lg);
+			font-size: 1rem;
+			font-family: inherit;
+			font-weight: 500;
+			color: var(--color-text);
+			background-color: transparent;
+			border: 0.125rem solid var(--color-border);
+			border-radius: var(--radius-md);
+			cursor: pointer;
+		}
+
+		.option-button:hover:not(:disabled) {
+			border-color: var(--color-accent);
+			background-color: color-mix(in srgb, var(--color-text) 4%, transparent);
+		}
+
+		.option-button:focus-visible,
+		.action-button:focus-visible {
+			outline: 0.1875rem solid var(--color-accent);
+			outline-offset: 0.125rem;
+		}
+
+		.option-button[data-feedback='correct'] {
+			background-color: var(--color-correct);
+			border-color: var(--color-correct);
+			color: var(--color-accent-contrast);
+		}
+
+		.option-button[data-feedback='incorrect'] {
+			background-color: var(--color-incorrect);
+			border-color: var(--color-incorrect);
+			color: var(--color-accent-contrast);
+		}
+
+		.option-button:disabled {
+			cursor: default;
+		}
+
+		.result-score {
+			font-size: clamp(2.5rem, 7vw, 3.5rem);
+			font-weight: 800;
+			letter-spacing: -0.03em;
+			line-height: 1.1;
+			margin-bottom: var(--space-xs);
+		}
+
+		.result-description {
+			color: var(--color-text-muted);
+			font-size: 1rem;
+			margin-bottom: var(--space-xl);
+		}
+
+		.summary-list {
+			list-style: none;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+			margin-bottom: var(--space-xl);
+			max-height: 15rem;
+			overflow-y: auto;
+			padding-right: var(--space-xs);
+		}
+
+		.summary-item {
+			font-size: 0.875rem;
+			padding: var(--space-sm);
+			border-radius: var(--radius-md);
+			background-color: color-mix(in srgb, var(--color-text) 4%, transparent);
+			display: flex;
+			justify-content: space-between;
+			gap: var(--space-sm);
+		}
+
+		.summary-status-correct {
+			color: var(--color-correct);
+			font-weight: 700;
+		}
+
+		.summary-status-incorrect {
+			color: var(--color-incorrect);
+			font-weight: 700;
+		}
+
+		.action-button {
+			width: 100%;
+			padding: var(--space-md) var(--space-lg);
+			font-size: 1rem;
+			font-family: inherit;
+			font-weight: 600;
+			color: var(--color-accent-contrast);
+			background-color: var(--color-accent);
+			border: none;
+			border-radius: var(--radius-md);
+			cursor: pointer;
+		}
+
+		.action-button:hover {
+			opacity: 0.88;
+		}
+	</style>
+</head>
+<body>
+	<main class='quiz-card' id='quiz-container' aria-live='polite'></main>
+
+	<script>
+		const BRUNO_QUIZ_QUESTIONS = Object.freeze([
+			{
+				questionText: 'Was ist mein Lieblingsfach?',
+				answerOptions: ['Sport', 'VP', 'Mathe', 'Englisch'],
+				brunoAnswerIndex: 2
+			},
+			{
+				questionText: 'Welches YouTube-Video würde ich am ehesten gucken?',
+				answerOptions: ['The Wolf of Wall Street Fooled an Entire Generation', 'Mac vs Windows: Who Spies More?', 'I was a AAA Game Dev. Here\'s What Players Don\'t Know', 'a necessary analysis of the Paddington prison industrial complex'],
+				brunoAnswerIndex: 3
+			},
+			{
+				questionText: 'Welche Vinyl will ich mir als nächstes kaufen?',
+				answerOptions: ['A Night at the Opera (Queen)', 'Use Your Illusion I (Guns N\' Roses)', 'Chocolate Starfish and the Hot Dog Flavored Water (Limp Bizkit)', 'Black Holes and Revelations (Muse)'],
+				brunoAnswerIndex: 3
+			},
+			{
+				questionText: 'Wie nenne ich dich am liebsten?',
+				answerOptions: ['Schwarzes Loch', 'Sanni', 'Kiwi', 'Mommy'],
+				brunoAnswerIndex: 1
+			},
+			{
+				questionText: 'Um wie viel Uhr SOLL ich jeden Tag für die Schule aufstehen?',
+				answerOptions: ['06:00 Uhr', '06:15 Uhr', '06:30 Uhr', '06:45 Uhr'],
+				brunoAnswerIndex: 2
+			},
+			{
+				questionText: 'Welchen Film fande ich am geilsten?',
+				answerOptions: ['Aladdin', 'Obsession', 'Pulp Fiction', 'Fack ju Göhte'],
+				brunoAnswerIndex: 0
+			},
+			{
+				questionText: 'Wie viele Katzen sollten wir haben',
+				answerOptions: ['Keine', 'Eine', 'Zwei', 'Einen Hund'],
+				brunoAnswerIndex: 1
+			},
+			{
+				questionText: 'Wann finde ich dich am süßesten?',
+				answerOptions: ['Immer', 'Wenn deine strahlenden Augen mich angucken und lächeln', 'Beim Schlafen', 'Wenn du laut lachst'],
+				brunoAnswerIndex: 0
+			},
+			{
+				questionText: 'Welche Jahreszeit ist die schlimmste?',
+				answerOptions: ['Frühling', 'Sommer', 'Herbst', 'Winter'],
+				brunoAnswerIndex: 0
+			},
+			{
+				questionText: 'Welches Spiel spiele ich am liebsten mit dir?',
+				answerOptions: ['Murder Mystery', 'Dieses Prison-Spiel', 'Catan', 'Adopt Me!'],
+				brunoAnswerIndex: 3
+			}
+		]);
+
+		function validateQuizConfiguration(questionsList) {
+			if (!Array.isArray(questionsList) || questionsList.length === 0) {
+				throw new Error('Quiz configuration requires a non-empty array of questions.');
+			}
+			for (const questionItem of questionsList) {
+				if (
+					typeof questionItem.questionText !== 'string' ||
+					!Array.isArray(questionItem.answerOptions) ||
+					questionItem.answerOptions.length !== 4 ||
+					typeof questionItem.brunoAnswerIndex !== 'number' ||
+					questionItem.brunoAnswerIndex < 0 ||
+					questionItem.brunoAnswerIndex >= 4
+				) {
+					throw new Error('Invalid question structure detected in quiz configuration.');
+				}
+			}
+		}
+
+		function calculateExactPercentage(correctAnswersCount, totalQuestionsCount) {
+			const safeCorrectCount = BigInt(correctAnswersCount);
+			const safeTotalCount = BigInt(totalQuestionsCount);
+			if (safeTotalCount === 0n) {
+				throw new Error('Total questions count cannot be zero.');
+			}
+			return Number((safeCorrectCount * 100n) / safeTotalCount);
+		}
+
+		function evaluateKnowledgeLevelText(percentageValue) {
+			if (percentageValue === 100) {
+				return 'Du kennst mich ja in- und auswendig!!!';
+			}
+			if (percentageValue >= 70) {
+				return 'Ein paar Fehler sind voll okeeee';
+			}
+			if (percentageValue >= 40) {
+				return 'Huch, da musst du aber noch ganz viel mit mir erleben!';
+			}
+			return 'Es ist supa, dass wir noch ein ganzes Leben haben um uns auswendig zu lernen!';
+		}
+
+		function calculateProgressPercentage(currentIndex, totalCount) {
+			return calculateExactPercentage(currentIndex, totalCount);
+		}
+
+		function createQuestionMarkup(questionItem, currentQuestionIndex, totalQuestionsCount) {
+			const progressPercentage = calculateProgressPercentage(currentQuestionIndex, totalQuestionsCount);
+			const questionNumber = currentQuestionIndex + 1;
+
+			const optionsMarkup = questionItem.answerOptions
+				.map(
+					(optionText, optionIndex) =>
+						`<li><button type='button' class='option-button' data-option-index='${optionIndex}'>${optionText}</button></li>`
+				)
+				.join('');
+
+			return `
+				<div class='progress-header'>
+					<span>${questionNumber} / ${totalQuestionsCount}</span>
+				</div>
+				<div class='progress-track' role='progressbar' aria-valuenow='${questionNumber}' aria-valuemin='1' aria-valuemax='${totalQuestionsCount}'>
+					<div class='progress-fill' style='width: ${progressPercentage}%'></div>
+				</div>
+				<h1 class='heading-title'>${questionItem.questionText}</h1>
+				<ul class='options-list'>
+					${optionsMarkup}
+				</ul>
+			`;
+		}
+
+		function createSummaryItemMarkup(questionItem, userSelectedIndex, questionIndex) {
+			const isMatch = userSelectedIndex === questionItem.brunoAnswerIndex;
+			const brunoCorrectAnswerText = questionItem.answerOptions[questionItem.brunoAnswerIndex];
+			const statusClass = isMatch ? 'summary-status-correct' : 'summary-status-incorrect';
+			const statusSymbol = isMatch ? '✓' : '✗';
+
+			return `
+				<li class='summary-item'>
+					<span><strong>Frage ${questionIndex + 1}:</strong> Bruno wählt „${brunoCorrectAnswerText}“</span>
+					<span class='${statusClass}' aria-label='${isMatch ? 'Richtig' : 'Falsch'}'>${statusSymbol}</span>
+				</li>
+			`;
+		}
+
+		function createResultMarkup(questionsList, userSelectionsList) {
+			const totalQuestionsCount = questionsList.length;
+			const correctAnswersCount = userSelectionsList.reduce((accumulatedScore, selectedOptionIndex, questionIndex) => {
+				const isCorrect = selectedOptionIndex === questionsList[questionIndex].brunoAnswerIndex;
+				return isCorrect ? accumulatedScore + 1 : accumulatedScore;
+			}, 0);
+
+			const exactPercentage = calculateExactPercentage(correctAnswersCount, totalQuestionsCount);
+			const evaluationMessage = evaluateKnowledgeLevelText(exactPercentage);
+
+			const summaryItemsMarkup = questionsList
+				.map((questionItem, questionIndex) =>
+					createSummaryItemMarkup(questionItem, userSelectionsList[questionIndex], questionIndex)
+				)
+				.join('');
+
+			return `
+				<div class='progress-header'>
+					<span>${correctAnswersCount} von ${totalQuestionsCount} richtig</span>
+				</div>
+				<div class='progress-track'>
+					<div class='progress-fill' style='width: 100%'></div>
+				</div>
+				<div class='result-score'>${exactPercentage}&nbsp;%</div>
+				<p class='result-description'>${evaluationMessage}</p>
+				<ul class='summary-list' aria-label='Übersicht der Antworten'>
+					${summaryItemsMarkup}
+				</ul>
+				<button type='button' class='action-button' id='restart-quiz-button'>Nochmal versuchen</button>
+			`;
+		}
+
+		function applyVisualFeedbackToButtons(containerElement, selectedOptionIndex, correctOptionIndex) {
+			const optionButtons = containerElement.querySelectorAll('.option-button');
+			for (const buttonElement of optionButtons) {
+				buttonElement.disabled = true;
+				const buttonIndex = Number(buttonElement.getAttribute('data-option-index'));
+				if (buttonIndex === correctOptionIndex) {
+					buttonElement.setAttribute('data-feedback', 'correct');
+				} else if (buttonIndex === selectedOptionIndex) {
+					buttonElement.setAttribute('data-feedback', 'incorrect');
+				}
+			}
+		}
+
+		function transitionContainerContent(containerElement, renderCallback) {
+			containerElement.setAttribute('data-transitioning', 'true');
+			window.setTimeout(() => {
+				renderCallback();
+				containerElement.removeAttribute('data-transitioning');
+			}, 180);
+		}
+
+		function initializeQuizApplication() {
+			validateQuizConfiguration(BRUNO_QUIZ_QUESTIONS);
+
+			const containerElement = document.getElementById('quiz-container');
+			if (!containerElement) {
+				throw new Error('Quiz container element is missing from the DOM.');
+			}
+
+			const applicationState = {
+				currentQuestionIndex: 0,
+				userSelectedIndices: [],
+				isInputLocked: false
+			};
+
+			function renderCurrentView() {
+				const isQuizCompleted = applicationState.currentQuestionIndex >= BRUNO_QUIZ_QUESTIONS.length;
+
+				if (isQuizCompleted) {
+					containerElement.innerHTML = createResultMarkup(
+						BRUNO_QUIZ_QUESTIONS,
+						applicationState.userSelectedIndices
+					);
+					const restartButton = document.getElementById('restart-quiz-button');
+					if (restartButton) {
+						restartButton.focus();
+					}
+					return;
+				}
+
+				const currentQuestionItem = BRUNO_QUIZ_QUESTIONS[applicationState.currentQuestionIndex];
+				containerElement.innerHTML = createQuestionMarkup(
+					currentQuestionItem,
+					applicationState.currentQuestionIndex,
+					BRUNO_QUIZ_QUESTIONS.length
+				);
+				applicationState.isInputLocked = false;
+			}
+
+			function handleOptionSelection(selectedOptionIndex) {
+				if (applicationState.isInputLocked) {
+					return;
+				}
+				applicationState.isInputLocked = true;
+
+				const currentQuestionItem = BRUNO_QUIZ_QUESTIONS[applicationState.currentQuestionIndex];
+				applicationState.userSelectedIndices.push(selectedOptionIndex);
+
+				applyVisualFeedbackToButtons(
+					containerElement,
+					selectedOptionIndex,
+					currentQuestionItem.brunoAnswerIndex
+				);
+
+				window.setTimeout(() => {
+					applicationState.currentQuestionIndex += 1;
+					transitionContainerContent(containerElement, renderCurrentView);
+				}, 550);
+			}
+
+			function handleQuizRestart() {
+				applicationState.currentQuestionIndex = 0;
+				applicationState.userSelectedIndices = [];
+				applicationState.isInputLocked = false;
+				transitionContainerContent(containerElement, renderCurrentView);
+			}
+
+			containerElement.addEventListener('click', (clickEvent) => {
+				const optionButton = clickEvent.target.closest('.option-button');
+				if (optionButton) {
+					const selectedOptionIndex = Number(optionButton.getAttribute('data-option-index'));
+					handleOptionSelection(selectedOptionIndex);
+					return;
+				}
+
+				const restartButton = clickEvent.target.closest('#restart-quiz-button');
+				if (restartButton) {
+					handleQuizRestart();
+				}
+			});
+
+			renderCurrentView();
+		}
+
+		initializeQuizApplication();
+	</script>
+</body>
+</html>

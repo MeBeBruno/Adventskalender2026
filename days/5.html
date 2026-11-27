@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang='de'>
+<head>
+	<meta charset='UTF-8'>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+	<title>5. Dezember</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			color: #fff;
+			font-family: fantasy;
+		}
+		html, body {
+			min-height: 100vh;
+			width: 100%;
+			padding: 1rem;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			gap: 1rem;
+			background-color: hsl(93, 48%, 62%);
+		}
+		#gitter {
+			display: grid;
+			gap: 4px;
+		}
+		.zelle {
+			position: relative;
+			width: 2.5rem;
+			height: 2.5rem;
+		}
+		.zelle input {
+			width: 100%;
+			height: 100%;
+			text-align: center;
+			font-size: 1.3rem;
+			text-transform: uppercase;
+			border: 2px solid hsl(93, 35%, 40%);
+			border-radius: 4px;
+			background: #fff;
+			color: #222;
+		}
+		.zelle input.richtig {
+			background: #d4f5c4;
+		}
+		.zelle input.falsch {
+			background: #f8c6c6;
+		}
+		.nummer {
+			position: absolute;
+			top: 2px;
+			left: 4px;
+			font-size: 0.65rem;
+			color: #555;
+			pointer-events: none;
+			font-family: sans-serif;
+		}
+		#hinweise {
+			display: flex;
+			gap: 2rem;
+		}
+		#hinweise ul {
+			list-style: none;
+			margin-top: 0.3rem;
+		}
+		#hinweise li {
+			cursor: pointer;
+		}
+		#hinweise li:hover {
+			text-decoration: underline;
+		}
+		button {
+			padding: 0.5rem 1.2rem;
+			font-size: 1rem;
+			border: none;
+			border-radius: 6px;
+			background: hsl(93, 35%, 40%);
+			cursor: pointer;
+		}
+	</style>
+</head>
+<body>
+	<div id='gitter'></div>
+
+	<div id='hinweise'>
+		<div>
+			<strong>Waagerecht</strong>
+			<ul id='waagerecht'></ul>
+		</div>
+		<div>
+			<strong>Senkrecht</strong>
+			<ul id='senkrecht'></ul>
+		</div>
+	</div>
+
+	<button id='pruefen'>Prüfen</button>
+	<p id='status'></p>
+
+	<script>
+		// Nur hier Wörter und Hinweise eintragen
+		const eingabe = [
+			{ wort: 'NIKOLAUS', hinweis: 'Kommt am 6. Dezember' },
+			{ wort: 'WINTER',   hinweis: 'Kalte Jahreszeit' },
+			{ wort: 'TANNE',    hinweis: 'Typischer Weihnachtsbaum' },
+			{ wort: 'ENGEL',    hinweis: 'Himmlischer Bote' },
+			{ wort: 'KERZE',    hinweis: 'Spendet Licht am Adventskranz' },
+			{ wort: 'STERN',    hinweis: 'Leuchtet am Nachthimmel' }
+		];
+
+		function berechneLayout(liste) {
+			if (!liste.length) return [];
+
+			const sortiert = liste
+				.map(e => ({ wort: e.wort.trim().toUpperCase(), hinweis: e.hinweis }))
+				.sort((a, b) => b.wort.length - a.wort.length);
+
+			const grid = {};
+			const platziert = [];
+
+			function eintragen(eintrag, x, y, dir) {
+				const dx = dir === 'w' ? 1 : 0;
+				const dy = dir === 's' ? 1 : 0;
+				for (let i = 0; i < eintrag.wort.length; i++) {
+					const cx = x + i * dx;
+					const cy = y + i * dy;
+					const key = `${cx},${cy}`;
+					if (!grid[key]) {
+						grid[key] = { x: cx, y: cy, buchstabe: eintrag.wort[i], richtungen: new Set() };
+					}
+					grid[key].richtungen.add(dir);
+				}
+				platziert.push({ ...eintrag, x, y, richtung: dir });
+			}
+
+			function pruefePosition(wort, x, y, dir) {
+				const dx = dir === 'w' ? 1 : 0;
+				const dy = dir === 's' ? 1 : 0;
+				const px = dy;
+				const py = dx;
+
+				if (grid[`${x - dx},${y - dy}`] || grid[`${x + wort.length * dx},${y + wort.length * dy}`]) {
+					return -1;
+				}
+
+				let kreuzungen = 0;
+				for (let i = 0; i < wort.length; i++) {
+					const cx = x + i * dx;
+					const cy = y + i * dy;
+					const feld = grid[`${cx},${cy}`];
+
+					if (feld) {
+						if (feld.buchstabe !== wort[i] || feld.richtungen.has(dir)) return -1;
+						kreuzungen++;
+					} else if (grid[`${cx - px},${cy - py}`] || grid[`${cx + px},${cy + py}`]) {
+						return -1;
+					}
+				}
+				return kreuzungen;
+			}
+
+			function grenzen() {
+				const zellen = Object.values(grid);
+				return {
+					minX: Math.min(...zellen.map(z => z.x)),
+					maxX: Math.max(...zellen.map(z => z.x)),
+					minY: Math.min(...zellen.map(z => z.y)),
+					maxY: Math.max(...zellen.map(z => z.y))
+				};
+			}
+
+			eintragen(sortiert[0], 0, 0, 'w');
+			let offen = sortiert.slice(1);
+			let fortschritt = true;
+
+			while (offen.length && fortschritt) {
+				fortschritt = false;
+				const naechsteRunde = [];
+
+				for (const eintrag of offen) {
+					const b = grenzen();
+					let beste = null;
+
+					for (const feld of Object.values(grid)) {
+						for (let i = 0; i < eintrag.wort.length; i++) {
+							if (feld.buchstabe !== eintrag.wort[i]) continue;
+
+							for (const dir of ['w', 's']) {
+								const x = dir === 'w' ? feld.x - i : feld.x;
+								const y = dir === 's' ? feld.y - i : feld.y;
+								const kreuzungen = pruefePosition(eintrag.wort, x, y, dir);
+								if (kreuzungen <= 0) continue;
+
+								const endX = x + (dir === 'w' ? eintrag.wort.length - 1 : 0);
+								const endY = y + (dir === 's' ? eintrag.wort.length - 1 : 0);
+								const flaeche = (Math.max(b.maxX, endX) - Math.min(b.minX, x) + 1)
+								              * (Math.max(b.maxY, endY) - Math.min(b.minY, y) + 1);
+								const punkte = kreuzungen * 1000 - flaeche;
+
+								if (!beste || punkte > beste.punkte) {
+									beste = { x, y, dir, punkte };
+								}
+							}
+						}
+					}
+
+					if (beste) {
+						eintragen(eintrag, beste.x, beste.y, beste.dir);
+						fortschritt = true;
+					} else {
+						naechsteRunde.push(eintrag);
+					}
+				}
+				offen = naechsteRunde;
+			}
+
+			for (const eintrag of offen) {
+				const b = grenzen();
+				eintragen(eintrag, b.minX, b.maxY + 2, 'w');
+			}
+
+			const { minX, minY } = grenzen();
+			return platziert
+				.map(w => ({ ...w, x: w.x - minX, y: w.y - minY }))
+				.sort((a, b) => a.y - b.y || a.x - b.x);
+		}
+
+		const woerter = berechneLayout(eingabe);
+		const felder = {};
+		let maxX = 0;
+		let maxY = 0;
+		let nummer = 1;
+
+		woerter.forEach(eintrag => {
+			eintrag.wort.split('').forEach((buchstabe, i) => {
+				const x = eintrag.richtung === 'w' ? eintrag.x + i : eintrag.x;
+				const y = eintrag.richtung === 's' ? eintrag.y + i : eintrag.y;
+				const key = `${x},${y}`;
+
+				if (!felder[key]) felder[key] = { x, y, loesung: buchstabe };
+				if (i === 0) {
+					if (!felder[key].nummer) felder[key].nummer = nummer++;
+					eintrag.nummer = felder[key].nummer;
+				}
+
+				maxX = Math.max(maxX, x);
+				maxY = Math.max(maxY, y);
+			});
+		});
+
+		const gitter = document.getElementById('gitter');
+		const status = document.getElementById('status');
+		gitter.style.gridTemplateColumns = `repeat(${maxX + 1}, 2.5rem)`;
+
+		const inputs = {};
+		let richtung = 'w';
+
+		for (let y = 0; y <= maxY; y++) {
+			for (let x = 0; x <= maxX; x++) {
+				const key = `${x},${y}`;
+				const feld = felder[key];
+				const zelle = document.createElement('div');
+				zelle.className = feld ? 'zelle' : '';
+
+				if (feld) {
+					if (feld.nummer) {
+						const nr = document.createElement('span');
+						nr.className = 'nummer';
+						nr.textContent = feld.nummer;
+						zelle.appendChild(nr);
+					}
+
+					const input = document.createElement('input');
+					input.maxLength = 1;
+					input.dataset.loesung = feld.loesung;
+
+					input.addEventListener('focus', () => input.select());
+					input.addEventListener('input', () => {
+						input.value = input.value.replace(/[^a-zA-ZäöüÄÖÜ]/g, '').toUpperCase();
+						input.classList.remove('richtig', 'falsch');
+						if (input.value) weiterSpringen(x, y);
+						pruefeGeloest();
+					});
+					input.addEventListener('keydown', e => navigiere(e, x, y));
+
+					zelle.appendChild(input);
+					inputs[key] = input;
+				}
+
+				gitter.appendChild(zelle);
+			}
+		}
+
+		woerter.forEach(eintrag => {
+			const li = document.createElement('li');
+			li.textContent = `${eintrag.nummer}. ${eintrag.hinweis}`;
+			li.addEventListener('click', () => {
+				richtung = eintrag.richtung;
+				inputs[`${eintrag.x},${eintrag.y}`].focus();
+			});
+			document.getElementById(eintrag.richtung === 'w' ? 'waagerecht' : 'senkrecht').appendChild(li);
+		});
+
+		function weiterSpringen(x, y) {
+			const rechts = inputs[`${x + 1},${y}`];
+			const unten = inputs[`${x},${y + 1}`];
+
+			if (richtung === 'w' && rechts) rechts.focus();
+			else if (richtung === 's' && unten) unten.focus();
+			else if (rechts) { richtung = 'w'; rechts.focus(); }
+			else if (unten) { richtung = 's'; unten.focus(); }
+		}
+
+		function navigiere(e, x, y) {
+			if (e.key === 'Backspace' && !e.target.value) {
+				const zurueck = inputs[richtung === 'w' ? `${x - 1},${y}` : `${x},${y - 1}`];
+				if (zurueck) zurueck.focus();
+				return;
+			}
+			const schritte = {
+				ArrowRight: [1, 0, 'w'],
+				ArrowLeft: [-1, 0, 'w'],
+				ArrowDown: [0, 1, 's'],
+				ArrowUp: [0, -1, 's']
+			};
+			const schritt = schritte[e.key];
+			if (!schritt) return;
+
+			richtung = schritt[2];
+			const ziel = inputs[`${x + schritt[0]},${y + schritt[1]}`];
+			if (ziel) {
+				e.preventDefault();
+				ziel.focus();
+			}
+		}
+
+		function pruefeGeloest() {
+			const alle = Object.values(inputs);
+			if (alle.every(inp => inp.value === inp.dataset.loesung)) {
+				alle.forEach(inp => inp.classList.add('richtig'));
+				status.textContent = 'Geschafft!';
+			}
+		}
+
+		document.getElementById('pruefen').addEventListener('click', () => {
+			let fehler = 0;
+			Object.values(inputs).forEach(inp => {
+				inp.classList.remove('richtig', 'falsch');
+				if (!inp.value) return;
+				const ok = inp.value === inp.dataset.loesung;
+				inp.classList.add(ok ? 'richtig' : 'falsch');
+				if (!ok) fehler++;
+			});
+			status.textContent = fehler > 0 ? `${fehler} Fehler gefunden.` : '';
+			pruefeGeloest();
+		});
+	</script>
+</body>
+</html>

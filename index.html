@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang='de'>
+<head>
+	<meta charset='UTF-8'>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+	<title>Sammas Adventskalender</title>
+	<style>
+		:root {
+			--day-width: min(calc(90vw / 7), calc(90vh / 7));
+		}
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		html, body {
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			gap: 1rem;
+		}
+		#calendar {
+			width: calc(7 * var(--day-width));
+			list-style: none;
+			display: grid;
+			grid-template-columns: repeat(7, 1fr);
+		}
+		#calendar > #day1 {
+			grid-column-start: 2; /* 2026: 2 */
+		}
+		#calendar > .day {
+			width: var(--day-width);
+			height: var(--day-width);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-size: calc(var(--day-width) / 1.5);
+		}
+		#calendar > .day > a {
+			width: 100%;
+			height: 100%;
+			color: #000;
+			text-decoration: none;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+		#title {
+			font-weight: normal;
+			text-align: center;
+		}
+		.media {
+			background-color: hsl(300, 75%, 75%);
+			color: hsl(120, 75%, 25%);
+		}
+		.minigame {
+			background-color: hsl(51, 75%, 75%);
+			color: hsl(231, 75%, 25%);
+		}
+		.memory {
+			background-color: hsl(0, 75%, 75%);
+			color: hsl(180, 75%, 25%);
+		}
+		.letter {
+			background-color: hsl(195, 75%, 75%);
+			color: hsl(15, 75%, 25%);
+		}
+		.today {
+			animation: wiggle 0.3s ease-in-out infinite;
+		}
+		.unopened {
+			opacity: 0.25;
+
+		}
+		@keyframes wiggle {
+			0% {
+				transform: scale(1.05) rotate(0);
+			}
+			25% {
+				transform: scale(1.05) rotate(5deg);
+			}
+			50% {
+				transform: scale(1.05) rotate(0);
+			}
+			75% {
+				transform: scale(1.05) rotate(-5deg);
+			}
+			100% {
+				transform: scale(1.05) rotate(0);
+			}
+		}
+	</style>
+</head>
+<body>
+	<h1 id="title">Sammas<br>Adventskalender</h1>
+	<ul id='calendar'>
+		<li class='day media' id='day1'>1</li>
+		<li class='day minigame' id='day2'>2</li>
+		<li class='day memory' id='day3'>3</li>
+		<li class='day media' id='day4'>4</li>
+		<li class='day minigame' id='day5'>5</li>
+		<li class='day letter' id='day6'>6</li>
+		<li class='day memory' id='day7'>7</li>
+		<li class='day media' id='day8'>8</li>
+		<li class='day minigame' id='day9'>9</li>
+		<li class='day memory' id='day10'>10</li>
+		<li class='day media' id='day11'>11</li>
+		<li class='day minigame' id='day12'>12</li>
+		<li class='day letter' id='day13'>13</li>
+		<li class='day memory' id='day14'>14</li>
+		<li class='day media' id='day15'>15</li>
+		<li class='day minigame' id='day16'>16</li>
+		<li class='day memory' id='day17'>17</li>
+		<li class='day media' id='day18'>18</li>
+		<li class='day minigame' id='day19'>19</li>
+		<li class='day letter' id='day20'>20</li>
+		<li class='day memory' id='day21'>21</li>
+		<li class='day media' id='day22'>22</li>
+		<li class='day minigame' id='day23'>23</li>
+		<li class='day letter' id='day24'>24</li>
+	</ul>
+	<script>
+		const today = Date.now();
+		const begin = new Date('2026-12-01')
+		const elapsedTime = today - begin;
+		const decemberDay = Math.ceil(elapsedTime / 1000 / 60 / 60 / 24) + 1;
+
+		if (decemberDay >= 1 && decemberDay <= 24) {
+			let doorToday = document.getElementById('day' + decemberDay);
+			doorToday.classList.add('today')
+		}
+
+		for (let i = 1; i <= 24; i++) {
+			let currentDay = document.getElementById('day' + i);
+			if (i <= decemberDay) {
+				currentDay.innerHTML = `<a href="days/${i}.html" target="_blank" rel="noopener noreferrer">${i}</a>`
+			} else {
+				currentDay.classList.add('unopened');
+			}
+		}
+	</script>
+</body>
+</html>
